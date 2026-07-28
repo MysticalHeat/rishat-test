@@ -11,10 +11,6 @@ class Item(models.Model):
     name = models.CharField()
     description = models.TextField()
 
-    @property
-    def display_price(self):
-        return self.price / 100
-
     def __str__(self):
         return self.name
 
@@ -25,6 +21,10 @@ class Price(models.Model):
         max_length=3, choices=Currency.choices, default=Currency.USD
     )
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="prices")
+
+    @property
+    def display_price(self):
+        return self.price / 100
 
 
 class Order(models.Model):

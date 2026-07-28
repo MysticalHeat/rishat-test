@@ -228,3 +228,37 @@ class PaymentResultViewTests(TestCase):
         response = self.client.get(reverse("payment_result"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "stripe")
+
+
+class ItemCardViewTests(TestCase):
+    def setUp(self):
+        self.item = Item.objects.create(
+            name="Widget", description="A useful widget"
+        )
+        Price.objects.create(item=self.item, price=1999, currency=Currency.USD)
+
+    def test_stripe_key_in_context(self):
+        response = self.client.get(
+            reverse("item_card", kwargs={"id": self.item.id})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "pk_test_")
+        self.assertNotContains(response, "sk_test_")
+
+    def test_item_name_in_template(self):
+        response = self.client.get(
+            reverse("item_card", kwargs={"id": self.item.id})
+        )
+        self.assertContains(response, "Widget")
+
+    def test_price_displayed(self):
+        response = self.client.get(
+            reverse("item_card", kwargs={"id": self.item.id})
+        )
+        self.assertContains(response, "19.99")
+
+    def test_nonexistent_item_returns_404(self):
+        response = self.client.get(
+            reverse("item_card", kwargs={"id": 9999})
+        )
+        self.assertEqual(response.status_code, 404)

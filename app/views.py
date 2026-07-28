@@ -41,6 +41,18 @@ def order_card(request, id):
     )
 
 
+def item_card(request, id):
+    item = get_object_or_404(Item, id=id)
+    return render(
+        request,
+        "app/payment_card/item_card.html",
+        {
+            "item": item,
+            "stripe_publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
+        },
+    )
+
+
 def payment_result(request):
     return render(
         request,

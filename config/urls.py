@@ -6,6 +6,7 @@ from app import views
 urlpatterns = [
     path("", views.index, name="index"),
     path("order/<int:id>", views.order_card, name="order_card"),
+    path("item/<int:id>", views.item_card, name="item_card"),
     path("admin/", admin.site.urls),
     path(
         "payments/result/",

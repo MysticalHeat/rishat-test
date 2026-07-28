@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ item.name }}</title>
+  <style>
+    #payment-form {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    #currency-select {
+      margin-bottom: 16px;
+    }
+    #currency-select label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: bold;
+    }
+    #currency-select select {
+      width: 100%;
+      padding: 8px;
+      font-size: 16px;
+    }
+    #payment-element {
+      margin-bottom: 16px;
+    }
+    #submit-button {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #payment-error {
+      color: #c00;
+      margin-top: 12px;
+    }
+    .item-summary {
+      background: #f5f5f5;
+      padding: 16px;
+      margin-bottom: 24px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <h1>{{ item.name }}</h1>
+
+    <div class="item-summary">
+      <p>{{ item.description }}</p>
+      <p><strong>Цена:</strong>
+        {% for price in item.prices.all %}
+        {{ price.display_price|floatformat:2 }} {{ price.currency|upper }}
+        {% if not forloop.last %} | {% endif %}
+        {% empty %}
+        нет цены
+        {% endfor %}
+      </p>
+    </div>
+
+    <form id="payment-form">
+      {% csrf_token %}
+
+      <div id="currency-select">
+        <label for="currency">Валюта:</label>
+        <select id="currency" name="currency">
+          <option value="">Выберите валюту</option>
+          <option value="usd">USD</option>
+          <option value="eur">EUR</option>
+        </select>
+      </div>
+
+      <div id="payment-element"></div>
+
+      <button id="submit-button" type="submit">
+        Оплатить
+      </button>
+
+      <div id="payment-error"></div>
+    </form>
+  </main>
+
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+    const stripe = Stripe("{{ stripe_publishable_key|escapejs }}");
+
+    const form = document.querySelector("#payment-form");
+    const submitButton = document.querySelector("#submit-button");
+    const errorContainer = document.querySelector("#payment-error");
+    const currencySelect = document.querySelector("#currency");
+    const paymentElementContainer = document.querySelector("#payment-element");
+    const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
+
+    let elements = null;
+
+    async function initializePayment() {
+      const currency = currencySelect.value;
+
+      if (!currency) {
+        paymentElementContainer.innerHTML = "";
+        return;
+      }
+
+      const response = await fetch(
+        "{% url 'create_payment_intent' resource_type='item' object_id=item.id %}",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken,
+          },
+          body: JSON.stringify({ currency: currency }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Не удалось создать платеж");
+      }
+
+      elements = stripe.elements({
+        clientSecret: data.client_secret,
+      });
+
+      const paymentElement = elements.create("payment", {
+        layout: "accordion",
+      });
+
+      paymentElement.mount("#payment-element");
+    }
+
+    currencySelect.addEventListener("change", async () => {
+      submitButton.disabled = true;
+      errorContainer.textContent = "";
+
+      try {
+        await initializePayment();
+        submitButton.disabled = false;
+      } catch (error) {
+        errorContainer.textContent = error.message;
+      }
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      if (!elements) {
+        return;
+      }
+
+      submitButton.disabled = true;
+      errorContainer.textContent = "";
+
+      const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: window.location.origin + "{% url 'payment_result' %}",
+        },
+      });
+
+      if (error) {
+        errorContainer.textContent =
+          error.message ?? "Не удалось выполнить оплату";
+        submitButton.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
