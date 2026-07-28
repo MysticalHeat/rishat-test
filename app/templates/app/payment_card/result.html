@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Результат оплаты</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .result {
+      text-align: center;
+      max-width: 400px;
+      padding: 32px;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    }
+    .result.success { border-top: 4px solid #0a0; }
+    .result.processing { border-top: 4px solid #fa0; }
+    .result.failed { border-top: 4px solid #c00; }
+    .status {
+      font-size: 18px;
+      margin: 16px 0;
+    }
+    .error {
+      color: #c00;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <div class="result" id="result">
+      <p class="status" id="status">Проверка статуса платежа...</p>
+      <div class="error" id="error"></div>
+    </div>
+  </main>
+
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+    const stripe = Stripe("{{ stripe_publishable_key|escapejs }}");
+    const resultEl = document.querySelector("#result");
+    const statusEl = document.querySelector("#status");
+    const errorEl = document.querySelector("#error");
+
+    async function checkStatus() {
+      const clientSecret = new URLSearchParams(window.location.search).get(
+        "payment_intent_client_secret",
+      );
+
+      if (!clientSecret) {
+        statusEl.textContent = "Не удалось получить данные платежа.";
+        return;
+      }
+
+      const { paymentIntent, error } = await stripe.retrievePaymentIntent(
+        clientSecret,
+      );
+
+      if (error) {
+        errorEl.textContent = error.message;
+        return;
+      }
+
+      switch (paymentIntent.status) {
+        case "succeeded":
+          resultEl.className = "result success";
+          statusEl.textContent = "Оплата прошла успешно!";
+          break;
+        case "processing":
+          resultEl.className = "result processing";
+          statusEl.textContent =
+            "Платеж обрабатывается. Мы сообщим, когда он будет завершен.";
+          break;
+        case "requires_payment_method":
+          resultEl.className = "result failed";
+          statusEl.textContent =
+            "Оплата не прошла. Попробуйте другой способ оплаты.";
+          break;
+        default:
+          resultEl.className = "result processing";
+          statusEl.textContent =
+            "Платеж еще не завершен. Пожалуйста, подождите.";
+      }
+    }
+
+    checkStatus();
+  </script>
+</body>
+</html>

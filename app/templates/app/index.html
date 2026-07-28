@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Магазин</title>
+  <style>
+    main {
+      display: flex;
+    }
+
+    .shop-card {
+      width: 30%;
+    }
+
+    .shop-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .shop-title {
+      border: 1px solid black;
+      padding: 3px;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <div class="shop-card">
+      <h1 class="shop-title">Бандлы</h1>
+      <div class="shop-list">
+        {% for order in orders %}
+        <a href="/order/{{order.id}}">{{order.name}}</a>
+        {% endfor%}
+      </div>
+    </div>
+    <div class="shop-card">
+      <h1 class="shop-title">Товары</h1>
+      <div class="shop-list">
+        {% for item in items %}
+        <a href="/item/{{item.id}}">{{item.name}} {{item.display_price}} {{item.currency}}</a>
+        {% endfor%}
+      </div>
+    </div>
+
+  </main>
+</body>
