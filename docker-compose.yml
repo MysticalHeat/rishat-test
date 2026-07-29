@@ -1,0 +1,28 @@
+x-shared: &shared
+  image: rishat:latest
+  build: .
+  env_file: .env
+  environment:
+    SQLITE_PATH: /data/db.sqlite3
+  volumes:
+    - app_data:/data
+
+services:
+  migrate:
+    <<: *shared
+    command: python manage.py migrate --noinput
+    restart: "no"
+
+  web:
+    <<: *shared
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    init: true
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+        restart: true
+
+volumes:
+  app_data:

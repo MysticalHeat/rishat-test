@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[co]
+
+# Virtual environment
+.venv/
+
+# Environment
+.env
+
+# Database
+db.sqlite3
+
+# IDE
+.vscode/
+.idea/
+
+# Lint cache
+.ruff_cache/
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Documentation
+README.md
