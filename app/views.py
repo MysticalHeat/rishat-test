@@ -131,10 +131,6 @@ def create_payment_intent(request, resource_type, object_id):
     except ValueError as e:
         return JsonResponse({"error": str(e)}, status=400)
 
-    idempotency_key = (
-        f"payment-{resource_type}-{object_id}-{currency}-{amount}"
-    )
-
     try:
         intent = stripe.PaymentIntent.create(
             amount=amount,
@@ -145,7 +141,6 @@ def create_payment_intent(request, resource_type, object_id):
                 "resource_id": str(object_id),
                 "currency": currency,
             },
-            idempotency_key=idempotency_key,
         )
     except stripe.StripeError:
         return JsonResponse(

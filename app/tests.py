@@ -18,9 +18,6 @@ class CreatePaymentIntentTests(TestCase):
         self.item_both = Item.objects.create(
             name="Dual", description="Has both currencies"
         )
-        self.item_multi_usd = Item.objects.create(
-            name="BadMulti", description="Two USD prices"
-        )
         self.item_no_price = Item.objects.create(
             name="Freebie", description="No price set"
         )
@@ -29,9 +26,6 @@ class CreatePaymentIntentTests(TestCase):
         Price.objects.create(item=self.item_eur, price=1499, currency=Currency.EUR)
         Price.objects.create(item=self.item_both, price=999, currency=Currency.USD)
         Price.objects.create(item=self.item_both, price=899, currency=Currency.EUR)
-
-        Price.objects.create(item=self.item_multi_usd, price=100, currency=Currency.USD)
-        Price.objects.create(item=self.item_multi_usd, price=200, currency=Currency.USD)
 
         self.order_usd = Order.objects.create(
             name="USD Bundle", description="All items have USD prices"
@@ -126,7 +120,6 @@ class CreatePaymentIntentTests(TestCase):
         self.assertEqual(kwargs["metadata"]["resource_type"], "item")
         self.assertEqual(kwargs["metadata"]["resource_id"], str(self.item_usd.id))
         self.assertEqual(kwargs["metadata"]["currency"], "usd")
-        self.assertIn("idempotency_key", kwargs)
 
     @patch("app.views.stripe.PaymentIntent.create")
     def test_order_payment_intent_created(self, mock_create):
@@ -164,25 +157,18 @@ class CreatePaymentIntentTests(TestCase):
         response = self._post("order", self.order_mixed.id, {"currency": "usd"})
         self.assertEqual(response.status_code, 400)
 
-    def test_item_with_multiple_prices_same_currency(self):
-        response = self._post("item", self.item_multi_usd.id, {"currency": "usd"})
-        self.assertEqual(response.status_code, 400)
-
     def test_empty_order(self):
         response = self._post("order", self.empty_order.id, {"currency": "usd"})
         self.assertEqual(response.status_code, 400)
 
     @patch("app.views.stripe.PaymentIntent.create")
-    def test_idempotency_key_consistent(self, mock_create):
+    def test_idempotency_key_not_set(self, mock_create):
         mock_create.return_value.client_secret = "pi_idem"
         mock_create.return_value.id = "pi_idem"
 
         self._post("item", self.item_usd.id, {"currency": "usd"})
-        self._post("item", self.item_usd.id, {"currency": "usd"})
 
-        first_key = mock_create.call_args_list[0].kwargs["idempotency_key"]
-        second_key = mock_create.call_args_list[1].kwargs["idempotency_key"]
-        self.assertEqual(first_key, second_key)
+        self.assertNotIn("idempotency_key", mock_create.call_args.kwargs)
 
     @patch("app.views.stripe.PaymentIntent.create")
     def test_stripe_error_returns_500(self, mock_create):

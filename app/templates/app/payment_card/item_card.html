@@ -129,6 +129,11 @@
         throw new Error(data.error ?? "Не удалось создать платеж");
       }
 
+      if (elements) {
+        paymentElementContainer.innerHTML = "";
+        elements = null;
+      }
+
       elements = stripe.elements({
         clientSecret: data.client_secret,
       });
