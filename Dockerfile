@@ -20,7 +20,7 @@ RUN uv run python manage.py collectstatic --noinput
 
 FROM python:3.13-slim-bookworm
 
-RUN groupadd --system rishat && useradd --system --gid rishat rishat
+RUN groupadd --system rishat && useradd --system --gid rishat --home-dir /tmp rishat
 
 RUN install -d -o rishat -g rishat /data
 VOLUME /data
