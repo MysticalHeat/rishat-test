@@ -22,6 +22,9 @@ class Price(models.Model):
     )
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="prices")
 
+    class Meta:
+        unique_together = ["item", "currency"]
+
     @property
     def display_price(self):
         return self.price / 100
