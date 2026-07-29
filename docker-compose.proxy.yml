@@ -1,0 +1,9 @@
+networks:
+    proxy:
+        external: true
+
+services:
+    web:
+        networks:
+            - default
+            - proxy
